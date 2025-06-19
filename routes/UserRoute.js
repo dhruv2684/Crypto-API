@@ -17,12 +17,11 @@ router.post('/login', userController.login);
 router.get('/get', verifyToken, userController.getCurrentUser);
 router.put('/update', verifyToken, userController.updateUser);
 
-// 
-router.post('/start-session', verifyToken,genrateCoinController.startSession);
-router.post('/coins', verifyToken, genrateCoinController.startCoinSession);
-
 router.get('/get-refer-user', verifyToken, userController.getReferralCount);
 
+// 
+router.post('/start-session', verifyToken,genrateCoinController.startSession);
+router.get('/session-status', verifyToken, genrateCoinController.getSessionStatus);
 
 
 
