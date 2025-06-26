@@ -86,7 +86,7 @@ setInterval(async () => {
       }
 
       // Mining logic
-      const newCoins = parseFloat(user.coins || 0) + 0.0010;
+      const newCoins = parseFloat(user.coins || 0) + 0.0008;
       user.coins = newCoins.toFixed(4);
       await user.save();
 
