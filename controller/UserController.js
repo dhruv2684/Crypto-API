@@ -163,4 +163,39 @@ exports.getTopCoinUser = async (req, res) => {
 };
 
 
+exports.resetPasswordWithOtp = async (req, res) => {
+    const { email, enteredOtp, password, confirmPassword } = req.body;
+
+    try {
+        // Step 1: Verify OTP
+        const otpRecord = await Otp.findOne({ email });
+        if (!otpRecord || otpRecord.otp !== enteredOtp) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        // Step 2: Check password match
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
+
+        // Step 3: Find and update user
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        // Step 4: Delete OTP from DB
+        await Otp.deleteMany({ email });
+
+        res.status(200).json({ message: 'Password reset successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 

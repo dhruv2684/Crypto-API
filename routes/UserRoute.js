@@ -25,6 +25,8 @@ router.get('/session-status', verifyToken, genrateCoinController.getSessionStatu
 router.get('/top-user', userController.getTopCoinUser);
 
 
+router.post('/reset-password', userController.resetPasswordWithOtp);
+
 
 
 
