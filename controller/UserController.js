@@ -199,3 +199,37 @@ exports.resetPasswordWithOtp = async (req, res) => {
 };
 
 
+exports.getCoinInc = async (req, res) => {
+
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // if (user.activeSession) {
+        //     return res.status(400).json({ message: 'Please wait, coin process already in progress.' });
+        // }
+
+        // user.activeSession = true;
+        // await user.save();
+
+        // Add coins after 20 seconds
+        setTimeout(async () => {
+            const currentCoins = parseFloat(user.coins.toString());
+            const updatedCoins = currentCoins + 50;
+
+            user.coins = updatedCoins;
+            // user.activeSession = false;
+            await user.save();
+
+            console.log(`✅ 50 coins added to user: ${user.username}`);
+        }, 20000);
+
+        res.status(200).json({ message: '⏳ Coin process started. Please wait 20 seconds.' });
+
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
