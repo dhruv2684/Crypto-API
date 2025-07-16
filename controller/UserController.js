@@ -37,12 +37,20 @@ exports.verifyOtpAndRegister = async (req, res) => {
         await newUser.save();
         await Otp.deleteMany({ email });
 
-        const referralLink = `http://localhost:5000/api/user/register?ref=${newReferralCode}`; // replace with real domain
+        // ✅ Only update referral count
+        if (referralCode) {
+            const referrer = await User.findOne({ referralCode });
+            if (referrer) {
+                referrer.referralCount = (referrer.referralCount || 0) + 1;
+                await referrer.save();
+            }
+        }
 
+        const referralLink = `http://localhost:5000/signup?ref=${newReferralCode}`;
         res.status(201).json({
             message: 'User registered successfully',
             referralCode: newReferralCode,
-            referralLink // send referral link to frontend
+            referralLink
         });
     } catch (err) {
         console.error(err);
@@ -62,7 +70,7 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-        const token = jwt.sign({ userId: user._id, type: "User" }, process.env.JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ userId: user._id, type: "User" }, process.env.JWT_SECRET, { expiresIn: '365d' });
 
         res.status(200).json({
             token,
@@ -131,6 +139,7 @@ exports.getReferralCount = async (req, res) => {
         res.status(200).json({
             referralCode: currentUser.referralCode,
             referredUsersCount: referredUsers.length,
+            referralRewards: currentUser.referralRewards || [],
             referredUsers
         });
     } catch (err) {
@@ -231,5 +240,49 @@ exports.getCoinInc = async (req, res) => {
     } catch (err) {
         console.error('Error:', err);
         res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+exports.claimReferralReward = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { level } = req.body; // 1, 3, or 5
+
+        const bonusMap = {
+            1: 50,
+            3: 250,
+            5: 700
+        };
+
+        const bonus = bonusMap[level];
+        if (!bonus) return res.status(400).json({ message: "Invalid reward level" });
+
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        if (user.referralRewards.includes(level)) {
+            return res.status(400).json({ message: "Reward already claimed" });
+        }
+
+        if (user.referralCount < level) {
+            return res.status(400).json({ message: `You need ${level} referrals to claim this reward` });
+        }
+
+        const currentCoins = parseFloat(user.coins.toString());
+        const newCoins = (currentCoins + bonus).toFixed(4);
+        user.coins = mongoose.Types.Decimal128.fromString(newCoins);
+        user.referralRewards.push(level);
+
+        await user.save();
+
+        res.status(200).json({
+            message: `+${bonus} DWX added to your wallet!`,
+            coins: newCoins,
+            claimedLevel: level
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 };

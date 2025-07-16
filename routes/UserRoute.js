@@ -27,6 +27,7 @@ router.get('/top-user', userController.getTopCoinUser);
 
 router.post('/reset-password', userController.resetPasswordWithOtp);
 router.post('/start-coin-process', verifyToken , userController.getCoinInc);
+router.post('/claim-reward', verifyToken, userController.claimReferralReward);
 
 
 
